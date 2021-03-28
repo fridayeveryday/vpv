@@ -7,7 +7,7 @@
 #include <profileapi.h>
 using namespace std;
 
-// n & 1 => x1 because 1(10) = 000001(2) 
+// n & 2 => x1 because 1(10) = 000010(2) 
 bool myFunction(unsigned short n) {
     cout << "x1x2x3 | x2!x3x4 | x1!x2 | x1!x2x3!x4 | x3x4";
     //             x1                x2                x3                 
@@ -21,7 +21,7 @@ bool myFunction(unsigned short n) {
         //   |       x3                x4
         || (((n & 8) >> 3) && ((n & 16) >> 4)));
 }
-
+int counter = 1000000;
 unsigned __int64 fibRecursive(unsigned __int64 n) {
     if (n < 2) return n;
     return fibRecursive(n - 1) + fibRecursive(n - 2);
@@ -29,10 +29,17 @@ unsigned __int64 fibRecursive(unsigned __int64 n) {
 
 void measureByClock(int n) {
     // measuring by clock
-    clock_t time = clock();
-    int result = fibRecursive(n);
-    time -= clock(); 
-    cout << "Result for " << n << " is " << result << ", time is " << (double)(time / CLOCKS_PER_SEC) << " by clock\n";
+    clock_t start = clock();
+    int result;
+    for (size_t i = 0; i < counter; i++)
+    {
+        result = fibRecursive(n);
+    }
+    clock_t end = clock(); 
+    clock_t delta = end - start;
+    double time = delta / (CLOCKS_PER_SEC);
+    time = time * 1.0 / counter;
+    cout << "Result for " << n << " is " << result << ", time is " << time << " by clock\n";
 }
 
 void measureByTSC(int n) {
@@ -42,23 +49,24 @@ void measureByTSC(int n) {
     tclock = clock();
     unsigned long long tsc = __rdtsc();
     while (clock() < tclock + 1); // ожидание конца начавшегося такта
-    //tsc = __rdtsc() – tsc;
-    tsc -= __rdtsc(); // сколько тактов TSC прошло за один такт clock
+    unsigned long long tscEnd = __rdtsc(); 
+    unsigned long long tscDelta = tscEnd - tsc;// сколько тактов TSC прошло за один такт clock
     unsigned long long F1 = tsc * CLOCKS_PER_SEC; // частота процессора
 
     tclock = clock();
     tsc = __rdtsc();
     while (clock() < tclock + 1); // ожидание конца начавшегося такта
-    //tsc = __rdtsc() – tsc;
-    tsc -= __rdtsc(); // сколько тактов TSC прошло за один такт clock
+    tscEnd = __rdtsc();
+    tscDelta = tscEnd - tsc;// сколько тактов TSC прошло за один такт clock
     unsigned long long F2 = tsc * CLOCKS_PER_SEC; // частота процессора
 
     F1 = F1 < F2 ? F1 : F2;
 
-    unsigned long long time = __rdtsc();
+    unsigned long long timeStart = __rdtsc();
     int result = fibRecursive(n);
-    time -= __rdtsc();
-    cout << "Result for " << n << " is " << result << ", time is" << (double)(time / F1) << "by TSC\n";
+    unsigned long long timeEnd = __rdtsc();
+    unsigned long long timeDelta = timeEnd - timeStart;
+    cout << "Result for " << n << " is " << result << ", time is " << (double)(time / F1) << " by TSC\n";
 }
 
 void measureByQPC(int n) {
@@ -67,15 +75,16 @@ void measureByQPC(int n) {
     QueryPerformanceCounter(&t_start); // засекаем время старта CODE
     int result = fibRecursive(n);
     QueryPerformanceCounter(&t_finish);   
-    cout << "Result for " << n << " is " << result << ", time is" << (double)((t_finish.QuadPart - t_start.QuadPart) / freqQPC.QuadPart) << "by TSC\n";
+    cout << "Result for " << n << " is " << result << ", time is " << (double)((t_finish.QuadPart - t_start.QuadPart) / freqQPC.QuadPart) << " by QPC\n";
 }
 
 int main()
 {
-    //int n = 10;
-    //measureByClock(n);
-    //measureByTSC(n);
-    //measureByQPC(n);
+    //40
+    int n = 10;
+    measureByClock(n);
+    measureByTSC(n);
+    measureByQPC(n);
 
 }
 
