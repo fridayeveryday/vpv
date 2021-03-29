@@ -32,7 +32,7 @@ unsigned __int64 fibRecursive(unsigned __int64 n) {
 void measureByClock(int n) {
     // measuring by clock
     clock_t start = clock();
-    int result;
+    
     for (size_t i = 0; i < counter; i++)
     {
         fibRecursive(n);
@@ -45,26 +45,20 @@ void measureByClock(int n) {
     cout << "Result for " << n << " is " << time << " by clock\n";
 }
 
-void measureByTSC(int n) {
-    clock_t tclock = clock();
-    while (clock() < tclock + 1); // ожидание конца текущего такта clock
 
+
+inline void measureByTSC(int n) {
+    clock_t tclock = clock();
+    while (clock() < tclock + 1); // ожидание конца начавшегося такта
+    
     tclock = clock();
-    unsigned long long tsc = __rdtsc();
+    unsigned long long  tsc = __rdtsc();
     while (clock() < tclock + 1); // ожидание конца начавшегося такта
     unsigned long long tscEnd = __rdtsc();
     unsigned long long tscDelta = tscEnd - tsc;// сколько тактов TSC прошло за один такт clock
-    unsigned long long F1 = tsc * CLOCKS_PER_SEC / 1e9; // частота процессора
+    unsigned long long F2 = (tscDelta * CLOCKS_PER_SEC); // частота процессора
 
-    tclock = clock();
-    tsc = __rdtsc();
-    while (clock() < tclock + 1); // ожидание конца начавшегося такта
-    tscEnd = __rdtsc();
-    tscDelta = tscEnd - tsc;// сколько тактов TSC прошло за один такт clock
-    unsigned long long F2 = (tsc * CLOCKS_PER_SEC) / 1e9; // частота процессора
-
-    F1 = F1 < F2 ? F1 : F2;
-
+    cout << F2<<endl;
     unsigned long long start;
     unsigned long long end;
     start = __rdtsc();
@@ -72,7 +66,7 @@ void measureByTSC(int n) {
     end = __rdtsc();
 
     unsigned long long deltaTSC = end - start;
-    double delta = (deltaTSC * 1.0) / F1;
+    double delta = (deltaTSC * 1.0) / F2;
     delta *= 1e9;
     cout << "Result for " << n << " is " << delta << " by TSC\n";
 }
@@ -98,9 +92,18 @@ int main()
 {
     //40
     int n = 10;
+    measureByTSC(n);
+    measureByClock(n);
+    measureByQPC(n);
+    cout << endl;
     measureByClock(n);
     measureByTSC(n);
     measureByQPC(n);
+
+    cout << endl;
+    measureByTSC(n);
+
+
 
 }
 
